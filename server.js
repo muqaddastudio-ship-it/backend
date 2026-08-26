@@ -24,25 +24,43 @@ connectDB();
 
 const app = express();
 
-// Dynamic CORS configuration to allow localhost and comma-separated client origins
-const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map(url => url.trim())
-  : ['http://localhost:5173', 'http://localhost:5174'];
+// Enable trust proxy for Render reverse proxy (vital for cookies & SSL)
+app.set('trust proxy', 1);
+
+// Dynamic CORS configuration to allow localhost and production domain
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://muqaddastudio.store',
+  'https://muqaddastudio.store',
+  'http://www.muqaddastudio.store',
+  'https://www.muqaddastudio.store'
+];
+
+const envOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map(url => url.trim().replace(/\/$/, ''))
+  : [];
+
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
     
-    // Automatically allow any localhost port in local development
-    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+    const cleanOrigin = origin.replace(/\/$/, '');
+    const isLocalhost = cleanOrigin.startsWith('http://localhost:') || cleanOrigin.startsWith('http://127.0.0.1:');
+    const isStudioDomain = cleanOrigin.includes('muqaddastudio.store');
     
-    if (isLocalhost || allowedOrigins.includes(origin)) {
+    if (isLocalhost || isStudioDomain || allowedOrigins.includes(cleanOrigin)) {
       callback(null, true);
     } else {
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 // Body Parsing & Cookie Parsing Middleware
