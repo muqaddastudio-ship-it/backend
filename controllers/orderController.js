@@ -95,10 +95,12 @@ const createOrder = asyncHandler(async (req, res) => {
     decrementedItems.push({ productId: item.product, size: item.size, qty: item.qty });
   }
 
-  // Step 3: Calculate totals
+  // Step 3: Calculate totals & Online Payment Discount (Save Rs. 200)
   const subtotal = items.reduce((acc, item) => acc + item.price * item.qty, 0);
   const shippingFee = subtotal > 5000 ? 0 : 250; // Free shipping over PKR 5,000, else 250 PKR
-  const total = subtotal + shippingFee;
+  const isOnlinePayment = paymentMethod === 'ONLINE_TRANSFER' || paymentMethod === 'Online Transfer';
+  const onlineDiscount = isOnlinePayment ? 200 : 0;
+  const total = Math.max(0, subtotal + shippingFee - onlineDiscount);
 
   // Step 4: Create Tracking ID
   let trackingId = generateTrackingId();
@@ -114,7 +116,8 @@ const createOrder = asyncHandler(async (req, res) => {
     guestEmail: orderUser ? undefined : guestEmail,
     items,
     shippingAddress,
-    paymentMethod: paymentMethod || 'COD',
+    paymentMethod: isOnlinePayment ? 'ONLINE_TRANSFER' : 'COD',
+    onlineDiscount,
     trackingId,
     courier: 'TCS Express',
     estimatedDelivery: '3-4 Business Days',

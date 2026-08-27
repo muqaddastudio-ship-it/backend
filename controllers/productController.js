@@ -43,7 +43,12 @@ const getProducts = asyncHandler(async (req, res) => {
   }
 
   if (category) {
-    query.category = category.toLowerCase();
+    const cat = category.toLowerCase();
+    if (cat === 'clothes' || cat === 'clothing') {
+      query.category = { $in: ['clothes', 'clothing'] };
+    } else {
+      query.category = cat;
+    }
   }
 
   if (subCategory) {

@@ -23,7 +23,7 @@ const productSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true, index: true },
   category: { 
     type: String, 
-    enum: ['clothes', 'perfume', 'accessories', 'shoes', 'bags'], 
+    enum: ['clothes', 'clothing', 'perfume', 'accessories', 'shoes', 'bags'], 
     required: true 
   },
   subCategory: { type: String, trim: true },

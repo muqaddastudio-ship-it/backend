@@ -134,16 +134,26 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
         <div style="margin-top: 20px; text-align: right; font-size: 14px; line-height: 1.8;">
           <p style="margin: 4px 0;">Subtotal: <strong>PKR ${order.subtotal.toLocaleString()}</strong></p>
           <p style="margin: 4px 0;">Shipping Fee: <strong>${order.shippingFee === 0 ? 'FREE' : `PKR ${order.shippingFee}`}</strong></p>
-          <p style="margin: 8px 0; font-size: 18px; color: #0a0904;">Total Amount (COD): <strong>PKR ${order.total.toLocaleString()}</strong></p>
+          ${order.onlineDiscount > 0 ? `<p style="margin: 4px 0; color: #16a34a;">Online Transfer Discount: <strong>-PKR ${order.onlineDiscount}</strong> (Rs. 200 Saved!)</p>` : ''}
+          <p style="margin: 8px 0; font-size: 18px; color: #0a0904;">Total Amount: <strong>PKR ${order.total.toLocaleString()}</strong></p>
         </div>
 
-        <!-- Shipping Info -->
+        <!-- Payment & Shipping Info -->
         <div style="background: #f9f9f9; border-radius: 6px; padding: 15px; margin-top: 25px; font-size: 13px;">
+          <p style="margin: 0 0 10px 0;">
+            <strong>Payment Method:</strong> ${order.paymentMethod === 'ONLINE_TRANSFER' ? '<span style="color: #16a34a; font-weight: bold;">Online Transfer / Bank / JazzCash (Rs. 200 Discount)</span>' : '<strong>Cash on Delivery (COD)</strong>'}
+          </p>
+          ${order.paymentMethod === 'ONLINE_TRANSFER' ? `
+            <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
+              <strong style="color: #065f46;">💬 Online Payment via WhatsApp:</strong><br/>
+              <span style="font-size: 12px; color: #047857;">Please share your order screenshot/tracking ID on WhatsApp for bank details:</span><br/>
+              <a href="https://wa.me/923124974360?text=Salam!%20I%20have%20placed%20Order%20%23${order.trackingId || order._id}%20for%20PKR%20${order.total}%20(Online%20Transfer%20Discount).%20Please%20share%20payment%20account%20details." style="color: #047857; font-weight: bold; text-decoration: underline;">Open WhatsApp Chat (+92 312 4974360)</a>
+            </div>
+          ` : ''}
           <strong style="color: #0a0904;">Delivery Address:</strong><br/>
           ${order.shippingAddress.name}<br/>
           ${order.shippingAddress.street}, ${order.shippingAddress.city}<br/>
-          Phone: ${order.shippingAddress.phone}<br/>
-          Payment Method: Cash on Delivery (COD)
+          Phone: ${order.shippingAddress.phone}
         </div>
       </div>
 
@@ -185,8 +195,8 @@ const sendAdminOrderEmail = async (order) => {
         <strong>Customer Email:</strong> ${order.guestEmail || (order.user ? order.user.email : 'N/A')}<br/>
         <strong>Delivery City:</strong> ${order.shippingAddress.city}<br/>
         <strong>Full Address:</strong> ${order.shippingAddress.street}<br/>
-        <strong>Payment Method:</strong> Cash on Delivery (COD)<br/>
-        <strong>Total Order Value:</strong> <span style="color: #008000; font-size: 16px; font-weight: bold;">PKR ${order.total.toLocaleString()}</span>
+        <strong>Payment Method:</strong> ${order.paymentMethod === 'ONLINE_TRANSFER' ? '<span style="color: #047857; font-weight: bold;">Online Transfer (Rs. 200 Discount applied - Verify via WhatsApp)</span>' : 'Cash on Delivery (COD)'}<br/>
+        <strong>Total Order Value:</strong> <span style="color: #008000; font-size: 16px; font-weight: bold;">PKR ${order.total.toLocaleString()}</span> ${order.onlineDiscount > 0 ? `(Subtotal: PKR ${order.subtotal} - Rs.${order.onlineDiscount} Disc)` : ''}
       </div>
 
       <h3>Ordered Items:</h3>
