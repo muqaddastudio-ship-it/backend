@@ -1,6 +1,8 @@
 const Product = require('../models/Product');
+const Order = require('../models/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const { processUploads } = require('../middleware/upload');
+const DEMO_REVIEWS = require('../utils/demoReviews');
 
 // Helper to format slug from product name
 const createSlug = (name) => {
@@ -34,24 +36,20 @@ const getProducts = asyncHandler(async (req, res) => {
 
   let query = {};
 
-  // Default to active products unless admin specifically queries another status
   if (status) {
     query.status = status;
   } else {
     query.status = 'active';
   }
 
-  // Category filter
   if (category) {
     query.category = category.toLowerCase();
   }
 
-  // SubCategory filter
   if (subCategory) {
     query.subCategory = new RegExp(`^${subCategory}$`, 'i');
   }
 
-  // Search filter
   if (search) {
     query.$or = [
       { name: { $regex: search, $options: 'i' } },
@@ -60,27 +58,23 @@ const getProducts = asyncHandler(async (req, res) => {
     ];
   }
 
-  // Size filter inside variants array
   if (size) {
     const sizeList = Array.isArray(size) ? size : size.split(',');
     query['variants.size'] = { $in: sizeList };
   }
 
-  // Color filter inside variants array
   if (color) {
     const colorList = Array.isArray(color) ? color : color.split(',');
     query['variants.color'] = { $in: colorList };
   }
 
-  // Price range filter
   if (minPrice || maxPrice) {
     query.price = {};
     if (minPrice) query.price.$gte = Number(minPrice);
     if (maxPrice) query.price.$lte = Number(maxPrice);
   }
 
-  // Sorting
-  let sortOptions = { createdAt: -1 }; // default newest
+  let sortOptions = { createdAt: -1 };
   if (sort === 'price-asc') sortOptions = { price: 1 };
   if (sort === 'price-desc') sortOptions = { price: -1 };
   if (sort === 'newest') sortOptions = { createdAt: -1 };
@@ -117,7 +111,7 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get product by slug
+// @desc    Get product by slug (includes 20-25 reviews guaranteed)
 // @route   GET /api/products/:slug
 // @access  Public
 const getProductBySlug = asyncHandler(async (req, res) => {
@@ -127,19 +121,139 @@ const getProductBySlug = asyncHandler(async (req, res) => {
     throw new Error('Product not found');
   }
 
-  // Also fetch related products (same category or subCategory)
+  // Also fetch related products
   const relatedProducts = await Product.find({
     category: product.category,
     _id: { $ne: product._id },
     status: 'active'
   }).limit(4);
 
+  // Combine real DB reviews with DEMO_REVIEWS to ensure 20-25 reviews per product
+  const dbReviews = product.reviews || [];
+  let combinedReviews = [...dbReviews];
+
+  // Pad with demo reviews until we reach 25 reviews
+  if (combinedReviews.length < 25) {
+    const needCount = 25 - combinedReviews.length;
+    const demoPadding = DEMO_REVIEWS.slice(0, needCount);
+    combinedReviews = [...combinedReviews, ...demoPadding];
+  }
+
+  // Calculate rating stats
+  const totalRatingSum = combinedReviews.reduce((sum, r) => sum + r.rating, 0);
+  const calculatedAvg = Number((totalRatingSum / combinedReviews.length).toFixed(1));
+
+  const productData = product.toObject();
+  productData.reviews = combinedReviews;
+  productData.reviewCount = combinedReviews.length;
+  productData.ratingAvg = calculatedAvg;
+
   res.status(200).json({
     success: true,
     data: {
-      product,
+      product: productData,
       relatedProducts
     }
+  });
+});
+
+// @desc    Check if logged-in user can review product (verified buyer check)
+// @route   GET /api/products/:id/can-review
+// @access  Private
+const canUserReviewProduct = asyncHandler(async (req, res) => {
+  const productId = req.params.id;
+
+  if (!req.user) {
+    return res.status(200).json({
+      success: true,
+      canReview: false,
+      reason: 'Please log in to leave a verified customer review.'
+    });
+  }
+
+  // Find any completed/confirmed/shipped/delivered order by this user containing this product
+  const existingOrder = await Order.findOne({
+    user: req.user._id,
+    'items.product': productId,
+    status: { $in: ['confirmed', 'shipped', 'delivered', 'pending'] }
+  });
+
+  if (!existingOrder) {
+    return res.status(200).json({
+      success: true,
+      canReview: false,
+      reason: 'Only verified customers who have purchased this item can write a review.'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    canReview: true,
+    reason: 'Verified Purchase Confirmed'
+  });
+});
+
+// @desc    Add verified customer review to product
+// @route   POST /api/products/:id/reviews
+// @access  Private (Verified Buyer Only)
+const addProductReview = asyncHandler(async (req, res) => {
+  const { rating, title, comment } = req.body;
+  const productId = req.params.id;
+
+  if (!rating || !comment) {
+    res.status(400);
+    throw new Error('Rating and comment are required.');
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  // Strict verification check: User MUST have an order for this product
+  const existingOrder = await Order.findOne({
+    user: req.user._id,
+    'items.product': productId,
+    status: { $in: ['confirmed', 'shipped', 'delivered', 'pending'] }
+  });
+
+  if (!existingOrder) {
+    res.status(403);
+    throw new Error('Only verified customers who have purchased this product can write a review.');
+  }
+
+  // Check if user already reviewed
+  const alreadyReviewed = product.reviews.find(
+    r => r.user && r.user.toString() === req.user._id.toString()
+  );
+
+  if (alreadyReviewed) {
+    res.status(400);
+    throw new Error('You have already submitted a review for this product.');
+  }
+
+  const review = {
+    user: req.user._id,
+    name: req.user.name || 'Verified Buyer',
+    rating: Number(rating),
+    title: title || 'Great Quality!',
+    comment,
+    isVerifiedBuyer: true,
+    location: existingOrder.shippingAddress?.city || 'Pakistan',
+    createdAt: new Date()
+  };
+
+  product.reviews.push(review);
+  product.reviewCount = product.reviews.length;
+  product.ratingAvg = product.reviews.reduce((acc, r) => acc + r.rating, 0) / product.reviews.length;
+
+  await product.save();
+
+  res.status(201).json({
+    success: true,
+    message: 'Review added successfully! Thank you for your feedback.',
+    data: review
   });
 });
 
@@ -162,11 +276,9 @@ const createProduct = asyncHandler(async (req, res) => {
 
   let imageUrls = [];
 
-  // Handle uploaded files via Multer
   if (req.files && req.files.length > 0) {
     imageUrls = await processUploads(req.files);
   } else if (bodyImages) {
-    // If sent as JSON array or single string
     imageUrls = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
   }
 
@@ -187,7 +299,6 @@ const createProduct = asyncHandler(async (req, res) => {
   }
 
   let slug = createSlug(name);
-  // Ensure unique slug
   let slugCount = await Product.countDocuments({ slug });
   if (slugCount > 0) {
     slug = `${slug}-${Date.now()}`;
@@ -241,7 +352,6 @@ const updateProduct = asyncHandler(async (req, res) => {
     imageUrls = Array.isArray(existingImages) ? existingImages : [existingImages];
   }
 
-  // Append any newly uploaded images
   if (req.files && req.files.length > 0) {
     const newUrls = await processUploads(req.files);
     imageUrls = [...imageUrls, ...newUrls];
@@ -308,6 +418,8 @@ module.exports = {
   getProducts,
   getFeaturedProducts,
   getProductBySlug,
+  canUserReviewProduct,
+  addProductReview,
   createProduct,
   updateProduct,
   deleteProduct

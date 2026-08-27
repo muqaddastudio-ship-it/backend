@@ -24,6 +24,9 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema],
   shippingAddress: { type: shippingAddressSchema, required: true },
   paymentMethod: { type: String, enum: ['COD'], default: 'COD' },
+  trackingId: { type: String, unique: true, sparse: true, index: true },
+  courier: { type: String, default: 'TCS Express' },
+  estimatedDelivery: { type: String, default: '3-4 Business Days' },
   status: { 
     type: String, 
     enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'], 
