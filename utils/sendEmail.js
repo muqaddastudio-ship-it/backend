@@ -1,20 +1,48 @@
-const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
 /**
- * Universal Email Sender
- * Primary: Gmail SMTP via Nodemailer (Sends to ANY customer email worldwide without domain restrictions)
- * Fallback: Resend API
+ * Universal Instant Email Sender
+ * Primary: Resend API (HTTPS Port 443 - Instant 0.2s delivery on Render & Cloud)
+ * Fallback: Nodemailer Gmail SMTP
  */
 const dispatchEmail = async ({ to, subject, html, fromName = 'Muqaddas Studio' }) => {
+  const apiKey = (process.env.RESEND_API_KEY || '').trim();
+
+  // Method 1: Resend API (Primary - Instant on Render/Cloud with verified domain)
+  if (apiKey && apiKey.startsWith('re_')) {
+    try {
+      const resend = new Resend(apiKey);
+      const fromEmail = (process.env.RESEND_FROM_EMAIL || 'orders@muqaddastudio.store').trim();
+      
+      const result = await resend.emails.send({
+        from: `${fromName} <${fromEmail}>`,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html
+      });
+
+      if (!result.error) {
+        console.log(`⚡ [Resend Instant] Email delivered to ${to} (Message ID: ${result.data?.id})`);
+        return result;
+      }
+      console.error(`⚠️ [Resend Error] ${result.error.message}. Switching to Gmail SMTP fallback...`);
+    } catch (err) {
+      console.error(`⚠️ [Resend Exception] ${err.message}. Switching to Gmail SMTP fallback...`);
+    }
+  }
+
+  // Method 2: Nodemailer Gmail SMTP (Backup with short timeout so it never hangs)
   const rawPass = (process.env.SMTP_PASS || 'fyll hpvm ters vlwk').replace(/\s+/g, '');
   const userEmail = (process.env.SMTP_USER || 'muqaddastudio@gmail.com').trim();
 
-  // Method 1: Nodemailer Gmail SMTP (Primary - 100% Deliverability to all client emails)
   if (userEmail && rawPass) {
     try {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
+        connectionTimeout: 5000, // 5s timeout max
+        greetingTimeout: 5000,
+        socketTimeout: 5000,
         auth: {
           user: userEmail,
           pass: rawPass
@@ -28,33 +56,10 @@ const dispatchEmail = async ({ to, subject, html, fromName = 'Muqaddas Studio' }
         html
       });
       
-      console.log(`✅ [Gmail SMTP] Email delivered to ${to} (Message ID: ${info.messageId})`);
+      console.log(`✅ [Gmail SMTP] Email delivered to ${to} (ID: ${info.messageId})`);
       return info;
     } catch (err) {
-      console.error(`⚠️ [Gmail SMTP Error] ${err.message}. Attempting Resend API fallback...`);
-    }
-  }
-
-  // Method 2: Resend API (Backup / Cloud Fallback)
-  const apiKey = (process.env.RESEND_API_KEY || '').trim();
-  if (apiKey && apiKey.startsWith('re_')) {
-    try {
-      const resend = new Resend(apiKey);
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-      const result = await resend.emails.send({
-        from: `${fromName} <${fromEmail}>`,
-        to: Array.isArray(to) ? to : [to],
-        subject,
-        html
-      });
-
-      if (!result.error) {
-        console.log(`✅ [Resend] Email delivered to ${to} (ID: ${result.data?.id})`);
-        return result;
-      }
-      console.error(`❌ [Resend Error] ${result.error.message}`);
-    } catch (err) {
-      console.error(`❌ [Resend Exception] ${err.message}`);
+      console.error(`❌ [Gmail SMTP Error] ${err.message}`);
     }
   }
 };
