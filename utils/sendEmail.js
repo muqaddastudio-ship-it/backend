@@ -73,7 +73,10 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
     return;
   }
 
-  const clientUrl = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',')[0] : 'https://muqaddastudio.store';
+  // Use live domain for email tracking link so it opens on all devices/browsers
+  const clientUrl = (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('localhost'))
+    ? process.env.CLIENT_URL.split(',')[0].trim()
+    : 'https://muqaddastudio.store';
   const trackingUrl = `${clientUrl}/track-order?id=${order.trackingId || order._id}`;
 
   const itemsHtml = order.items.map(item => `
