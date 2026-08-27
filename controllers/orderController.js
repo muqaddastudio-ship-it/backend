@@ -1,7 +1,8 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
-const { sendCustomerOrderEmail, sendAdminOrderEmail } = require('../utils/sendEmail');
+const { sendCustomerOrderEmail, sendAdminOrderEmail, sendOrderStatusUpdateEmail } = require('../utils/sendEmail');
 
 // Helper to generate unique Tracking ID
 const generateTrackingId = () => {
@@ -276,6 +277,8 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
 
+  const previousStatus = order.status;
+
   if (status) {
     if (!validStatuses.includes(status)) {
       res.status(400);
@@ -299,6 +302,24 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   if (estimatedDelivery) order.estimatedDelivery = estimatedDelivery;
 
   const updatedOrder = await order.save();
+
+  // If status was changed, send email alert to client
+  if (status && status !== previousStatus) {
+    (async () => {
+      try {
+        let customerEmail = updatedOrder.guestEmail;
+        if (!customerEmail && updatedOrder.user) {
+          const u = await User.findById(updatedOrder.user);
+          customerEmail = u ? u.email : null;
+        }
+        if (customerEmail) {
+          await sendOrderStatusUpdateEmail(updatedOrder, status, customerEmail);
+        }
+      } catch (e) {
+        console.error('Error sending order status update email:', e.message);
+      }
+    })();
+  }
 
   res.status(200).json({
     success: true,

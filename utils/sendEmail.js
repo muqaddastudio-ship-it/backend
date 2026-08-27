@@ -208,8 +208,116 @@ const sendAdminOrderEmail = async (order) => {
   });
 };
 
+/**
+ * Send Order Status Update email to Customer
+ */
+const sendOrderStatusUpdateEmail = async (order, newStatus, customerEmail) => {
+  if (!customerEmail || !customerEmail.includes('@')) {
+    console.error('❌ Cannot send status update email: Invalid customer email address:', customerEmail);
+    return;
+  }
+
+  const clientUrl = (process.env.CLIENT_URL && !process.env.CLIENT_URL.includes('localhost'))
+    ? process.env.CLIENT_URL.split(',')[0].trim()
+    : 'https://muqaddastudio.store';
+  const trackingUrl = `${clientUrl}/track-order?id=${order.trackingId || order._id}`;
+
+  const statusConfig = {
+    confirmed: {
+      emoji: '✨',
+      title: 'Order Confirmed & Quality Checked',
+      badgeBg: '#e0f2fe',
+      badgeColor: '#0369a1',
+      desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Aap ka order successfully <strong>Confirm</strong> ho gaya hai aur quality inspection mukammal ho chuki hai. Hamara studio team jald parcel courier ko hand over kar raha hai.`
+    },
+    shipped: {
+      emoji: '🚚',
+      title: 'Parcel Dispatched & On Its Way!',
+      badgeBg: '#f3e8ff',
+      badgeColor: '#7e22ce',
+      desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Great news! Aap ka parcel dispatch kar diya gaya hai via <strong>${order.courier || 'TCS Express'}</strong>. Expected delivery time <strong>${order.estimatedDelivery || '2-3 Business Days'}</strong> hai.`
+    },
+    delivered: {
+      emoji: '🎉',
+      title: 'Order Delivered Successfully!',
+      badgeBg: '#dcfce7',
+      badgeColor: '#15803d',
+      desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Aap ka parcel successfully deliver ho chuka hai. Umeed hai aapko Muqaddas Studio ke kapray aur stitching pasand aayi hogi! Thank you for trusting us.`
+    },
+    cancelled: {
+      emoji: '⚠️',
+      title: 'Order Cancelled',
+      badgeBg: '#fee2e2',
+      badgeColor: '#b91c1c',
+      desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Aap ka order #${order.trackingId || order._id} cancel kar diya gaya hai. Agar aapko koi sawal ho to hamare helpline par rabta karein.`
+    }
+  };
+
+  const currentCfg = statusConfig[newStatus] || {
+    emoji: '📦',
+    title: `Order Status Updated: ${newStatus.toUpperCase()}`,
+    badgeBg: '#fef3c7',
+    badgeColor: '#b45309',
+    desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Aap ke order ka status update ho kar <strong>${newStatus}</strong> ho gaya hai.`
+  };
+
+  const htmlContent = `
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; color: #111111;">
+      <!-- Header -->
+      <div style="background: #0a0904; padding: 30px; text-align: center;">
+        <h1 style="color: #c9a84c; font-size: 26px; margin: 0; letter-spacing: 4px; text-transform: uppercase;">MUQADDAS STUDIO</h1>
+        <p style="color: #cccccc; font-size: 11px; letter-spacing: 3px; margin-top: 5px; text-transform: uppercase;">Refined Pakistani Couture</p>
+      </div>
+
+      <!-- Body -->
+      <div style="padding: 30px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="display: inline-block; background: ${currentCfg.badgeBg}; color: ${currentCfg.badgeColor}; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; padding: 6px 16px; border-radius: 20px;">
+            ${newStatus.toUpperCase()}
+          </span>
+          <h2 style="font-size: 22px; color: #111111; margin: 12px 0 6px 0;">${currentCfg.title}</h2>
+        </div>
+
+        <p style="font-size: 14px; color: #444444; line-height: 1.6;">
+          ${currentCfg.desc}
+        </p>
+
+        <!-- Tracking Card -->
+        <div style="background: #faf7f2; border: 1px dashed #c9a84c; border-radius: 6px; padding: 18px; margin: 25px 0; text-align: center;">
+          <span style="font-size: 12px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">Tracking Number</span>
+          <div style="font-size: 22px; font-weight: bold; color: #0a0904; letter-spacing: 2px; margin: 6px 0;">${order.trackingId || order._id}</div>
+          <span style="font-size: 12px; color: #888888;">Courier: ${order.courier || 'TCS Express'} | Total: PKR ${(order.total || 0).toLocaleString()} (COD)</span><br/><br/>
+          <a href="${trackingUrl}" style="background: #0a0904; color: #ffffff; padding: 10px 22px; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: bold; letter-spacing: 1px; display: inline-block;">TRACK LIVE STATUS NOW</a>
+        </div>
+
+        <!-- Delivery Address Recap -->
+        <div style="background: #f9f9f9; border-radius: 6px; padding: 15px; margin-top: 20px; font-size: 13px;">
+          <strong style="color: #0a0904;">Destination Address:</strong><br/>
+          ${order.shippingAddress?.name}<br/>
+          ${order.shippingAddress?.street}, ${order.shippingAddress?.city}<br/>
+          Phone: ${order.shippingAddress?.phone}
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777777;">
+        <p style="margin: 0;">Muqaddas Studio — Luxury Pakistani Women's Fashion</p>
+        <p style="margin: 5px 0 0 0;">WhatsApp / Email Support: <a href="mailto:muqaddastudio@gmail.com" style="color: #111;">muqaddastudio@gmail.com</a></p>
+      </div>
+    </div>
+  `;
+
+  return await dispatchEmail({
+    to: customerEmail,
+    subject: `${currentCfg.emoji} Order Update #${order.trackingId || order._id} is now ${newStatus.toUpperCase()} — Muqaddas Studio`,
+    html: htmlContent,
+    fromName: 'Muqaddas Studio'
+  });
+};
+
 module.exports = {
   dispatchEmail,
   sendCustomerOrderEmail,
-  sendAdminOrderEmail
+  sendAdminOrderEmail,
+  sendOrderStatusUpdateEmail
 };
