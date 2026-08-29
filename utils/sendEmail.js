@@ -101,10 +101,11 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
 
       <!-- Body -->
       <div style="padding: 30px;">
-        <h2 style="font-size: 20px; color: #111111; margin-top: 0;">Order Confirmation — Thank You!</h2>
+        <h2 style="font-size: 20px; color: #111111; margin-top: 0;">Your order has been successfully placed! 🤍</h2>
         <p style="font-size: 14px; color: #444444; line-height: 1.6;">
           Dear <strong>${order.shippingAddress.name}</strong>,<br/>
-          Aap ka order successfully place ho gaya hai! We are quality inspecting your parcel for dispatch via ${order.courier || 'TCS Express'}.
+          Thank you for choosing Muqaddas Studio.<br/>
+          Your order is now being carefully quality-checked and prepared for dispatch via courier company.
         </p>
 
         <!-- Tracking Box -->
@@ -147,7 +148,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
             <div style="background: #ecfdf5; border: 1px solid #10b981; padding: 12px; border-radius: 6px; margin-bottom: 12px;">
               <strong style="color: #065f46;">💬 Online Payment via WhatsApp:</strong><br/>
               <span style="font-size: 12px; color: #047857;">Please share your order screenshot/tracking ID on WhatsApp for bank details:</span><br/>
-              <a href="https://wa.me/923124974360?text=Salam!%20I%20have%20placed%20Order%20%23${order.trackingId || order._id}%20for%20PKR%20${order.total}%20(Online%20Transfer%20Discount).%20Please%20share%20payment%20account%20details." style="color: #047857; font-weight: bold; text-decoration: underline;">Open WhatsApp Chat (+92 312 4974360)</a>
+              <a href="https://wa.me/923274114240?text=Salam!%20I%20have%20placed%20Order%20%23${order.trackingId || order._id}%20for%20PKR%20${order.total}%20(Online%20Transfer%20Discount).%20Please%20share%20payment%20account%20details." style="color: #047857; font-weight: bold; text-decoration: underline;">Open WhatsApp Chat (+92 327 4114240)</a>
             </div>
           ` : ''}
           <strong style="color: #0a0904;">Delivery Address:</strong><br/>

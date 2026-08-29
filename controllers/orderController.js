@@ -30,12 +30,9 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Complete shipping address (name, street, city, phone) is required');
   }
 
-  // If user is guest, guestEmail is required
+  // If user is guest, email is optional. Phone is required.
   let orderUser = req.user ? req.user._id : null;
-  if (!orderUser && !guestEmail) {
-    res.status(400);
-    throw new Error('Email is required for guest checkout');
-  }
+  const cleanGuestEmail = guestEmail && guestEmail.trim() ? guestEmail.trim().toLowerCase() : undefined;
 
   // Step 1: Pre-check stock for all items
   const decrementedItems = [];
@@ -113,7 +110,7 @@ const createOrder = asyncHandler(async (req, res) => {
   // Step 5: Create Order record
   const order = await Order.create({
     user: orderUser,
-    guestEmail: orderUser ? undefined : guestEmail,
+    guestEmail: orderUser ? undefined : cleanGuestEmail,
     items,
     shippingAddress,
     paymentMethod: isOnlinePayment ? 'ONLINE_TRANSFER' : 'COD',
