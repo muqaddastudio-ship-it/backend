@@ -30,9 +30,13 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Complete shipping address (name, street, city, phone) is required');
   }
 
-  // If user is guest, email is optional. Phone is required.
+  // If user is guest, email is required
   let orderUser = req.user ? req.user._id : null;
-  const cleanGuestEmail = guestEmail && guestEmail.trim() ? guestEmail.trim().toLowerCase() : undefined;
+  if (!orderUser && (!guestEmail || !guestEmail.trim() || !guestEmail.includes('@'))) {
+    res.status(400);
+    throw new Error('Valid email address is required for order confirmation');
+  }
+  const cleanGuestEmail = orderUser ? undefined : guestEmail.trim().toLowerCase();
 
   // Step 1: Pre-check stock for all items
   const decrementedItems = [];
