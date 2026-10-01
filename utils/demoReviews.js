@@ -8,7 +8,7 @@ const DEMO_REVIEWS = [
     location: "Lahore",
     rating: 5,
     title: "Absolutely Stunning Fabric & Embroidery!",
-    comment: "Received my package today via TCS in just 2 days! The resham embroidery on the neckline is so fine and detailed. Lawn fabric quality is pre-shrunk and ultra soft. Highly recommended Muqaddas Studio!",
+    comment: "Received my package today via PostEx in just 3-4 days! The hand embroidery on the neckline is so fine and detailed. Lawn fabric quality is pre-shrunk and ultra soft. Highly recommended Muqaddas Studio!",
     isVerifiedBuyer: true,
     date: "2 days ago"
   },
@@ -124,7 +124,7 @@ const DEMO_REVIEWS = [
     name: "Maryam Imran",
     location: "Islamabad",
     rating: 5,
-    title: "Exquisite Resham Needlework",
+    title: "Exquisite Hand Needlework",
     comment: "Details on cuffs and neckline are intricate. Royal feel! Will definitely recommend to friends.",
     isVerifiedBuyer: true,
     date: "2 months ago"

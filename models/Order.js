@@ -26,8 +26,8 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ['COD', 'ONLINE_TRANSFER', 'Online Transfer'], default: 'COD' },
   onlineDiscount: { type: Number, default: 0 },
   trackingId: { type: String, unique: true, sparse: true, index: true },
-  courier: { type: String, default: 'TCS Express' },
-  estimatedDelivery: { type: String, default: '3-4 Business Days' },
+  courier: { type: String, default: 'PostEx' },
+  estimatedDelivery: { type: String, default: '3-5 Business Days' },
   status: { 
     type: String, 
     enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'], 

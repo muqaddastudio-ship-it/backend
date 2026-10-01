@@ -34,7 +34,7 @@ const dispatchEmail = async ({ to, subject, html, fromName = 'Muqaddas Studio' }
 
   // Method 2: Nodemailer Gmail SMTP (Backup with short timeout so it never hangs)
   const rawPass = (process.env.SMTP_PASS || 'fyll hpvm ters vlwk').replace(/\s+/g, '');
-  const userEmail = (process.env.SMTP_USER || 'muqaddastudio@gmail.com').trim();
+  const userEmail = (process.env.SMTP_USER || 'muqaddasstudio@gmail.com').trim();
 
   if (userEmail && rawPass) {
     try {
@@ -112,7 +112,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
         <div style="background: #faf7f2; border: 1px dashed #c9a84c; border-radius: 6px; padding: 18px; margin: 20px 0; text-align: center;">
           <span style="font-size: 12px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">Tracking Number</span>
           <div style="font-size: 22px; font-weight: bold; color: #0a0904; letter-spacing: 2px; margin: 6px 0;">${order.trackingId || order._id}</div>
-          <span style="font-size: 12px; color: #888888;">Courier: ${order.courier || 'TCS Express'} | Expected Delivery: ${order.estimatedDelivery || '3-4 Days'}</span><br/><br/>
+          <span style="font-size: 12px; color: #888888;">Courier: ${order.courier || 'PostEx'} | Expected Delivery: ${order.estimatedDelivery || '3-5 Business Days'}</span><br/><br/>
           <a href="${trackingUrl}" style="background: #0a0904; color: #ffffff; padding: 10px 22px; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: bold; letter-spacing: 1px; display: inline-block;">TRACK YOUR PARCEL NOW</a>
         </div>
 
@@ -161,7 +161,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
       <!-- Footer -->
       <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777777;">
         <p style="margin: 0;">Muqaddas Studio — Luxury Pakistani Women's Fashion</p>
-        <p style="margin: 5px 0 0 0;">Need help? Email us at <a href="mailto:muqaddastudio@gmail.com" style="color: #111;">muqaddastudio@gmail.com</a></p>
+        <p style="margin: 5px 0 0 0;">Need help? Email us at <a href="mailto:muqaddasstudio@gmail.com" style="color: #111;">muqaddasstudio@gmail.com</a></p>
       </div>
     </div>
   `;
@@ -178,7 +178,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
  * Send New Order Notification email to Admin (muqaddastudio@gmail.com)
  */
 const sendAdminOrderEmail = async (order) => {
-  const adminEmail = process.env.ADMIN_EMAIL || 'muqaddastudio@gmail.com';
+  const adminEmail = process.env.ADMIN_EMAIL || 'muqaddasstudio@gmail.com';
 
   const itemsText = order.items.map(item => `- ${item.name} (${item.size}) x${item.qty} = PKR ${(item.price * item.qty).toLocaleString()}`).join('<br/>');
 
@@ -246,7 +246,7 @@ const sendOrderStatusUpdateEmail = async (order, newStatus, customerEmail) => {
       title: 'Parcel Dispatched & On Its Way!',
       badgeBg: '#f3e8ff',
       badgeColor: '#7e22ce',
-      desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Great news! Aap ka parcel dispatch kar diya gaya hai via <strong>${order.courier || 'TCS Express'}</strong>. Expected delivery time <strong>${order.estimatedDelivery || '2-3 Business Days'}</strong> hai.`
+      desc: `Dear <strong>${order.shippingAddress?.name || 'Customer'}</strong>,<br/>Great news! Aap ka parcel dispatch kar diya gaya hai via <strong>${order.courier || 'PostEx'}</strong>. Expected delivery time <strong>${order.estimatedDelivery || '3-5 Business Days'}</strong> hai.`
     },
     delivered: {
       emoji: '🎉',
@@ -297,7 +297,7 @@ const sendOrderStatusUpdateEmail = async (order, newStatus, customerEmail) => {
         <div style="background: #faf7f2; border: 1px dashed #c9a84c; border-radius: 6px; padding: 18px; margin: 25px 0; text-align: center;">
           <span style="font-size: 12px; color: #666666; text-transform: uppercase; letter-spacing: 1px;">Tracking Number</span>
           <div style="font-size: 22px; font-weight: bold; color: #0a0904; letter-spacing: 2px; margin: 6px 0;">${order.trackingId || order._id}</div>
-          <span style="font-size: 12px; color: #888888;">Courier: ${order.courier || 'TCS Express'} | Total: PKR ${(order.total || 0).toLocaleString()} (COD)</span><br/><br/>
+          <span style="font-size: 12px; color: #888888;">Courier: ${order.courier || 'PostEx'} | Total: PKR ${(order.total || 0).toLocaleString()} (COD)</span><br/><br/>
           <a href="${trackingUrl}" style="background: #0a0904; color: #ffffff; padding: 10px 22px; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: bold; letter-spacing: 1px; display: inline-block;">TRACK LIVE STATUS NOW</a>
         </div>
 
@@ -313,7 +313,7 @@ const sendOrderStatusUpdateEmail = async (order, newStatus, customerEmail) => {
       <!-- Footer -->
       <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 12px; color: #777777;">
         <p style="margin: 0;">Muqaddas Studio — Luxury Pakistani Women's Fashion</p>
-        <p style="margin: 5px 0 0 0;">WhatsApp / Email Support: <a href="mailto:muqaddastudio@gmail.com" style="color: #111;">muqaddastudio@gmail.com</a></p>
+        <p style="margin: 5px 0 0 0;">WhatsApp / Email Support: <a href="mailto:muqaddasstudio@gmail.com" style="color: #111;">muqaddasstudio@gmail.com</a></p>
       </div>
     </div>
   `;

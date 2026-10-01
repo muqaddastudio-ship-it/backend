@@ -2,7 +2,6 @@ const Product = require('../models/Product');
 const Order = require('../models/Order');
 const asyncHandler = require('../utils/asyncHandler');
 const { processUploads } = require('../middleware/upload');
-const DEMO_REVIEWS = require('../utils/demoReviews');
 
 // Helper to format slug from product name
 const createSlug = (name) => {
@@ -116,7 +115,7 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get product by slug (includes 20-25 reviews guaranteed)
+// @desc    Get product by slug
 // @route   GET /api/products/:slug
 // @access  Public
 const getProductBySlug = asyncHandler(async (req, res) => {
@@ -126,31 +125,24 @@ const getProductBySlug = asyncHandler(async (req, res) => {
     throw new Error('Product not found');
   }
 
-  // Also fetch related products
+  // Fetch related products
   const relatedProducts = await Product.find({
     category: product.category,
     _id: { $ne: product._id },
     status: 'active'
   }).limit(4);
 
-  // Combine real DB reviews with DEMO_REVIEWS to ensure 20-25 reviews per product
-  const dbReviews = product.reviews || [];
-  let combinedReviews = [...dbReviews];
+  // Only real verified reviews from the database
+  const realReviews = product.reviews || [];
 
-  // Pad with demo reviews until we reach 25 reviews
-  if (combinedReviews.length < 25) {
-    const needCount = 25 - combinedReviews.length;
-    const demoPadding = DEMO_REVIEWS.slice(0, needCount);
-    combinedReviews = [...combinedReviews, ...demoPadding];
-  }
-
-  // Calculate rating stats
-  const totalRatingSum = combinedReviews.reduce((sum, r) => sum + r.rating, 0);
-  const calculatedAvg = Number((totalRatingSum / combinedReviews.length).toFixed(1));
+  // Calculate rating stats from real reviews only
+  const calculatedAvg = realReviews.length > 0
+    ? Number((realReviews.reduce((sum, r) => sum + r.rating, 0) / realReviews.length).toFixed(1))
+    : 0;
 
   const productData = product.toObject();
-  productData.reviews = combinedReviews;
-  productData.reviewCount = combinedReviews.length;
+  productData.reviews = realReviews;
+  productData.reviewCount = realReviews.length;
   productData.ratingAvg = calculatedAvg;
 
   res.status(200).json({
