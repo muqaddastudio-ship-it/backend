@@ -79,17 +79,38 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
     : 'https://muqaddastudio.store';
   const trackingUrl = `${clientUrl}/track-order?id=${order.trackingId || order._id}`;
 
-  const itemsHtml = order.items.map(item => `
-    <tr>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5;">
-        <img src="${item.image}" alt="${item.name}" width="50" height="65" style="object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 10px;" />
-        <strong>${item.name}</strong><br/>
-        <span style="font-size: 12px; color: #666;">Size: ${item.size} | Color: ${item.color || 'Default'}</span>
-      </td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: center;">${item.qty}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: right; font-weight: bold;">PKR ${(item.price * item.qty).toLocaleString()}</td>
-    </tr>
-  `).join('');
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemsHtml = items.map(item => {
+    const itemName = item.name || 'Product Item';
+    const itemQty = Number(item.qty) || 1;
+    const itemPrice = Number(item.price) || 0;
+    const itemSize = item.size || 'Standard';
+    const itemColor = item.color || 'Default';
+    const itemTotal = itemPrice * itemQty;
+
+    let imageUrl = item.image || '';
+    if (imageUrl && imageUrl.startsWith('/')) {
+      imageUrl = `${clientUrl}${imageUrl}`;
+    }
+
+    return `
+      <tr style="border-bottom: 1px solid #eeeeee;">
+        <td style="padding: 12px; color: #111111; font-size: 13px; vertical-align: middle;">
+          ${imageUrl ? `<img src="${imageUrl}" alt="${itemName}" width="45" height="58" style="object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 12px; display: inline-block; background-color: #f5f5f5;" />` : ''}
+          <div style="display: inline-block; vertical-align: middle;">
+            <strong style="color: #111111; font-size: 13px; display: block; margin-bottom: 2px;">${itemName}</strong>
+            <span style="font-size: 11px; color: #666666; display: block;">Size: ${itemSize} | Color: ${itemColor}</span>
+          </div>
+        </td>
+        <td style="padding: 12px; color: #111111; font-size: 13px; text-align: center; vertical-align: middle; font-weight: bold;">
+          ${itemQty}
+        </td>
+        <td style="padding: 12px; color: #111111; font-size: 13px; text-align: right; vertical-align: middle; font-weight: bold;">
+          PKR ${itemTotal.toLocaleString()}
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   const htmlContent = `
     <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; color: #111111;">
@@ -100,10 +121,10 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
       </div>
 
       <!-- Body -->
-      <div style="padding: 30px;">
+      <div style="padding: 30px; background-color: #ffffff;">
         <h2 style="font-size: 20px; color: #111111; margin-top: 0;">Your order has been successfully placed! 🤍</h2>
         <p style="font-size: 14px; color: #444444; line-height: 1.6;">
-          Dear <strong>${order.shippingAddress.name}</strong>,<br/>
+          Dear <strong style="color: #111111;">${order.shippingAddress?.name || 'Customer'}</strong>,<br/>
           Thank you for choosing Muqaddas Studio.<br/>
           Your order is now being carefully quality-checked and prepared for dispatch via courier company.
         </p>
@@ -117,17 +138,17 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
         </div>
 
         <!-- Order Items -->
-        <h3 style="font-size: 16px; border-bottom: 2px solid #111; padding-bottom: 6px; margin-top: 25px;">Order Summary</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+        <h3 style="font-size: 16px; color: #111111; border-bottom: 2px solid #111111; padding-bottom: 6px; margin-top: 25px;">Order Summary</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; background-color: #ffffff; color: #111111; margin-top: 10px;">
           <thead>
-            <tr style="background: #f9f9f9; text-align: left;">
-              <th style="padding: 10px;">Product</th>
-              <th style="padding: 10px; text-align: center;">Qty</th>
-              <th style="padding: 10px; text-align: right;">Total</th>
+            <tr style="background-color: #f5f5f5; color: #111111; text-align: left;">
+              <th style="padding: 10px 12px; color: #111111; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Product</th>
+              <th style="padding: 10px 12px; color: #111111; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: center;">Qty</th>
+              <th style="padding: 10px 12px; color: #111111; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; text-align: right;">Total</th>
             </tr>
           </thead>
           <tbody>
-            ${itemsHtml}
+            ${itemsHtml || `<tr><td colspan="3" style="padding: 15px; text-align: center; color: #666666;">No items found</td></tr>`}
           </tbody>
         </table>
 
