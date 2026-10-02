@@ -80,6 +80,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
   const trackingUrl = `${clientUrl}/track-order?id=${order.trackingId || order._id}`;
 
   const items = Array.isArray(order.items) ? order.items : [];
+  console.log(`📧 [Order Email] Sending to ${customerEmail} | Items count: ${items.length} | Order ID: ${order.trackingId || order._id}`);
   const itemsHtml = items.map(item => {
     const itemName = item.name || 'Product Item';
     const itemQty = Number(item.qty) || 1;
@@ -89,14 +90,21 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
     const itemTotal = itemPrice * itemQty;
 
     let imageUrl = item.image || '';
+    // Strip base64 images — they bloat the email (>100KB) causing Gmail to clip/hide the order summary
+    if (imageUrl && (imageUrl.startsWith('data:') || imageUrl.startsWith('data:'))) {
+      imageUrl = '';
+    }
+    // Only use full http/https URLs; skip relative paths that won't resolve in emails
     if (imageUrl && imageUrl.startsWith('/')) {
       imageUrl = `${clientUrl}${imageUrl}`;
     }
+    // Only embed the image if it's a valid external URL
+    const isValidUrl = imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
 
     return `
       <tr style="border-bottom: 1px solid #eeeeee;">
         <td style="padding: 12px; color: #111111; font-size: 13px; vertical-align: middle;">
-          ${imageUrl ? `<img src="${imageUrl}" alt="${itemName}" width="45" height="58" style="object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 12px; display: inline-block; background-color: #f5f5f5;" />` : ''}
+          ${isValidUrl ? `<img src="${imageUrl}" alt="${itemName}" width="45" height="58" style="object-fit: cover; border-radius: 4px; vertical-align: middle; margin-right: 12px; display: inline-block; background-color: #f5f5f5;" />` : ''}
           <div style="display: inline-block; vertical-align: middle;">
             <strong style="color: #111111; font-size: 13px; display: block; margin-bottom: 2px;">${itemName}</strong>
             <span style="font-size: 11px; color: #666666; display: block;">Size: ${itemSize} | Color: ${itemColor}</span>
@@ -126,7 +134,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
         <p style="font-size: 14px; color: #444444; line-height: 1.6;">
           Dear <strong style="color: #111111;">${order.shippingAddress?.name || 'Customer'}</strong>,<br/>
           Thank you for choosing Muqaddas Studio.<br/>
-          Your order is now being carefully quality-checked and prepared for dispatch via courier company.
+          Your order is now being carefully quality-checked and prepared for dispatch via <strong>PostEx</strong> courier.
         </p>
 
         <!-- Tracking Box -->
@@ -154,10 +162,10 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
 
         <!-- Totals -->
         <div style="margin-top: 20px; text-align: right; font-size: 14px; line-height: 1.8;">
-          <p style="margin: 4px 0;">Subtotal: <strong>PKR ${order.subtotal.toLocaleString()}</strong></p>
-          <p style="margin: 4px 0;">Shipping Fee: <strong>${order.shippingFee === 0 ? 'FREE' : `PKR ${order.shippingFee}`}</strong></p>
-          ${order.onlineDiscount > 0 ? `<p style="margin: 4px 0; color: #16a34a;">Online Transfer Discount: <strong>-PKR ${order.onlineDiscount}</strong> (Rs. 200 Saved!)</p>` : ''}
-          <p style="margin: 8px 0; font-size: 18px; color: #0a0904;">Total Amount: <strong>PKR ${order.total.toLocaleString()}</strong></p>
+          <p style="margin: 4px 0;">Subtotal: <strong>PKR ${(order.subtotal || 0).toLocaleString()}</strong></p>
+          <p style="margin: 4px 0;">Shipping Fee: <strong>${(order.shippingFee === 0 || order.shippingFee === '0') ? 'FREE' : `PKR ${order.shippingFee || 250}`}</strong></p>
+          ${(order.onlineDiscount || 0) > 0 ? `<p style="margin: 4px 0; color: #16a34a;">Online Transfer Discount: <strong>-PKR ${order.onlineDiscount}</strong> (Rs. 200 Saved!)</p>` : ''}
+          <p style="margin: 8px 0; font-size: 18px; color: #0a0904;">Total Amount: <strong>PKR ${(order.total || 0).toLocaleString()}</strong></p>
         </div>
 
         <!-- Payment & Shipping Info -->
