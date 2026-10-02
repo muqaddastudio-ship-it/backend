@@ -323,30 +323,47 @@ const createProduct = asyncHandler(async (req, res) => {
     parsedVariants = variants;
   }
 
+  const cleanVariants = parsedVariants.map(v => ({
+    size: v.size || 'M',
+    color: v.color || 'Default',
+    colorHex: v.colorHex || '#000000',
+    stock: isNaN(Number(v.stock)) ? 0 : Math.max(0, Number(v.stock))
+  }));
+
+  const normCategory = (category || 'clothes').toLowerCase().trim();
+  const validCategories = ['clothes', 'clothing', 'perfume', 'accessories', 'shoes', 'bags'];
+  const finalCategory = validCategories.includes(normCategory) ? normCategory : 'clothes';
+
   let slug = createSlug(name);
   let slugCount = await Product.countDocuments({ slug });
   if (slugCount > 0) {
     slug = `${slug}-${Date.now()}`;
   }
 
-  const product = await Product.create({
-    name,
-    slug,
-    category,
-    subCategory,
-    description,
-    price: Number(price),
-    discountPrice: discountPrice ? Number(discountPrice) : null,
-    images: imageUrls,
-    variants: parsedVariants,
-    featured: featured === 'true' || featured === true,
-    status: status || 'active'
-  });
+  try {
+    const product = await Product.create({
+      name,
+      slug,
+      category: finalCategory,
+      subCategory,
+      description,
+      price: Number(price),
+      discountPrice: discountPrice ? Number(discountPrice) : null,
+      images: imageUrls,
+      variants: cleanVariants,
+      featured: featured === 'true' || featured === true,
+      status: status || 'active'
+    });
 
-  res.status(201).json({
-    success: true,
-    data: product
-  });
+    res.status(201).json({
+      success: true,
+      data: product
+    });
+  } catch (err) {
+    console.error('[createProduct Error]:', err);
+    res.status(400);
+    throw new Error(err.message || 'Failed to create product');
+  }
 });
 
 // @desc    Update product (Admin)
@@ -392,10 +409,15 @@ const updateProduct = asyncHandler(async (req, res) => {
     product.slug = newSlug;
   }
 
-  if (category) product.category = category;
+  if (category) {
+    const normCategory = category.toLowerCase().trim();
+    const validCategories = ['clothes', 'clothing', 'perfume', 'accessories', 'shoes', 'bags'];
+    product.category = validCategories.includes(normCategory) ? normCategory : product.category;
+  }
+
   if (subCategory !== undefined) product.subCategory = subCategory;
   if (description) product.description = description;
-  if (price !== undefined) product.price = Number(price);
+  if (price !== undefined && !isNaN(Number(price))) product.price = Number(price);
   if (discountPrice !== undefined) product.discountPrice = discountPrice ? Number(discountPrice) : null;
   if (imageUrls.length > 0) product.images = imageUrls;
   if (status) product.status = status;
@@ -407,19 +429,31 @@ const updateProduct = asyncHandler(async (req, res) => {
       try {
         parsedVariants = JSON.parse(variants);
       } catch (e) {
-        parsedVariants = product.variants;
+        parsedVariants = [];
       }
     } else if (Array.isArray(variants)) {
       parsedVariants = variants;
     }
-    product.variants = parsedVariants;
+
+    product.variants = parsedVariants.map(v => ({
+      size: v.size || 'M',
+      color: v.color || 'Default',
+      colorHex: v.colorHex || '#000000',
+      stock: isNaN(Number(v.stock)) ? 0 : Math.max(0, Number(v.stock))
+    }));
   }
 
-  const updatedProduct = await product.save();
-  res.status(200).json({
-    success: true,
-    data: updatedProduct
-  });
+  try {
+    const updatedProduct = await product.save();
+    res.status(200).json({
+      success: true,
+      data: updatedProduct
+    });
+  } catch (saveErr) {
+    console.error('[updateProduct Save Error]:', saveErr);
+    res.status(400);
+    throw new Error(saveErr.message || 'Validation error while updating product');
+  }
 });
 
 // @desc    Delete product (Admin)
