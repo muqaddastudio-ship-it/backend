@@ -15,7 +15,10 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+  limits: { 
+    fileSize: 15 * 1024 * 1024,  // 15MB file upload limit
+    fieldSize: 50 * 1024 * 1024 // 50MB text field size limit (for existing base64 image strings)
+  }
 });
 
 // Helper function to process uploads to Cloudinary or convert to Data URI fallback
