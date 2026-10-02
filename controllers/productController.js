@@ -108,7 +108,13 @@ const getProducts = asyncHandler(async (req, res) => {
 // @route   GET /api/products/featured
 // @access  Public
 const getFeaturedProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ featured: true, status: 'active' }).limit(8);
+  let products = await Product.find({ featured: true, status: 'active' }).sort({ createdAt: -1 }).limit(8);
+
+  // If no products are explicitly marked featured, fetch latest active products
+  if (!products || products.length === 0) {
+    products = await Product.find({ status: 'active' }).sort({ createdAt: -1 }).limit(8);
+  }
+
   res.status(200).json({
     success: true,
     data: products
