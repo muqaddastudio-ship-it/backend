@@ -39,8 +39,8 @@ const productSchema = new mongoose.Schema({
     default: 'active' 
   },
   featured: { type: Boolean, default: false },
-  ratingAvg: { type: Number, default: 4.8 },
-  reviewCount: { type: Number, default: 24 },
+  ratingAvg: { type: Number, default: 0 },
+  reviewCount: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
 });
 
