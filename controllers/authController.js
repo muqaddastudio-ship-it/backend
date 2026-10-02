@@ -239,6 +239,41 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Verify 6-Digit OTP Code
+// @route   POST /api/auth/verify-otp
+// @access  Public
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    res.status(400);
+    throw new Error('Email and 6-digit OTP code are required');
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: cleanEmail });
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp.trim()) {
+    res.status(400);
+    throw new Error('Invalid OTP code. Please double check the 6 digits sent to your email.');
+  }
+
+  if (!user.resetPasswordOtpExpires || new Date() > new Date(user.resetPasswordOtpExpires)) {
+    res.status(400);
+    throw new Error('OTP code has expired (2 minute limit). Please click Resend OTP.');
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'OTP verified successfully! You can now set your new password.'
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -246,5 +281,6 @@ module.exports = {
   logoutUser,
   getMe,
   forgotPassword,
+  verifyOtp,
   resetPassword
 };

@@ -7,6 +7,7 @@ const {
   logoutUser,
   getMe,
   forgotPassword,
+  verifyOtp,
   resetPassword
 } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/auth');
@@ -46,6 +47,16 @@ router.post(
   ],
   validateRequest,
   forgotPassword
+);
+
+router.post(
+  '/verify-otp',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email address'),
+    body('otp').notEmpty().withMessage('6-digit OTP code is required')
+  ],
+  validateRequest,
+  verifyOtp
 );
 
 router.post(
