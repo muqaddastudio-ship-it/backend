@@ -23,7 +23,7 @@ const processUploads = async (files) => {
   if (!files || files.length === 0) return [];
 
   const uploadPromises = files.map(file => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       // Check if Cloudinary is configured with valid credentials
       if (
         process.env.CLOUDINARY_CLOUD_NAME && 
@@ -34,8 +34,14 @@ const processUploads = async (files) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: 'muqaddas-studio' },
           (error, result) => {
-            if (error) return reject(error);
-            resolve(result.secure_url);
+            if (error) {
+              // Cloudinary failed — fallback to base64
+              console.error('[Upload] Cloudinary error, using base64 fallback:', error.message);
+              const b64 = Buffer.from(file.buffer).toString('base64');
+              resolve(`data:${file.mimetype};base64,${b64}`);
+            } else {
+              resolve(result.secure_url);
+            }
           }
         );
         stream.end(file.buffer);
