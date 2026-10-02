@@ -2,6 +2,7 @@ const User = require('../models/User');
 const generateTokens = require('../utils/generateTokens');
 const asyncHandler = require('../utils/asyncHandler');
 const jwt = require('jsonwebtoken');
+const { sendOtpEmail } = require('../utils/sendEmail');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -151,10 +152,99 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Request Password Reset 6-Digit OTP (Checks if email exists in DB first)
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || !email.trim()) {
+    res.status(400);
+    throw new Error('Please enter your registered email address');
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  // Step 1: Check if user exists in database
+  const user = await User.findOne({ email: cleanEmail });
+  if (!user) {
+    res.status(404);
+    throw new Error('This email address is not registered in our database.');
+  }
+
+  // Step 2: Generate 6-digit OTP code & 2-minute expiration
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes from now
+
+  user.resetPasswordOtp = otp;
+  user.resetPasswordOtpExpires = expires;
+  await user.save();
+
+  // Step 3: Send OTP Email
+  try {
+    await sendOtpEmail(cleanEmail, otp, user.name);
+  } catch (err) {
+    console.error('Failed to send OTP email:', err);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'A 6-digit OTP code has been sent to your email. It will expire in 2 minutes.'
+  });
+});
+
+// @desc    Verify OTP and Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    res.status(400);
+    throw new Error('Email, OTP code, and new password are required');
+  }
+
+  if (newPassword.length < 6) {
+    res.status(400);
+    throw new Error('New password must be at least 6 characters long');
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const user = await User.findOne({ email: cleanEmail });
+
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp.trim()) {
+    res.status(400);
+    throw new Error('Invalid OTP code. Please double check the 6 digits in your email.');
+  }
+
+  if (!user.resetPasswordOtpExpires || new Date() > new Date(user.resetPasswordOtpExpires)) {
+    res.status(400);
+    throw new Error('OTP code has expired (2 minute limit). Please click Resend OTP.');
+  }
+
+  // Update password and clear OTP fields
+  user.passwordHash = newPassword;
+  user.resetPasswordOtp = undefined;
+  user.resetPasswordOtpExpires = undefined;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Password reset successfully! You can now sign in with your new password.'
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
   refreshToken,
   logoutUser,
-  getMe
+  getMe,
+  forgotPassword,
+  resetPassword
 };

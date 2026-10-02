@@ -18,7 +18,7 @@ const generateTrackingId = () => {
 // @route   POST /api/orders
 // @access  Public (supports Guest & Logged-in)
 const createOrder = asyncHandler(async (req, res) => {
-  const { items, shippingAddress, guestEmail, paymentMethod } = req.body;
+  const { items, shippingAddress, guestEmail, email, paymentMethod } = req.body;
 
   if (!items || items.length === 0) {
     res.status(400);
@@ -30,13 +30,16 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error('Complete shipping address (name, street, city, phone) is required');
   }
 
-  // If user is guest, email is required
+  // Determine customer email from req.user, guestEmail, req.body.email, or shippingAddress.email
   let orderUser = req.user ? req.user._id : null;
-  if (!orderUser && (!guestEmail || !guestEmail.trim() || !guestEmail.includes('@'))) {
+  const rawEmail = (req.user && req.user.email) || guestEmail || email || (shippingAddress && shippingAddress.email);
+
+  if (!rawEmail || !rawEmail.trim() || !rawEmail.includes('@')) {
     res.status(400);
     throw new Error('Valid email address is required for order confirmation');
   }
-  const cleanGuestEmail = orderUser ? undefined : guestEmail.trim().toLowerCase();
+
+  const cleanGuestEmail = rawEmail.trim().toLowerCase();
 
   // Step 1: Pre-check stock for all items
   const decrementedItems = [];

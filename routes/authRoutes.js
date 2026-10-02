@@ -5,7 +5,9 @@ const {
   loginUser,
   refreshToken,
   logoutUser,
-  getMe
+  getMe,
+  forgotPassword,
+  resetPassword
 } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/auth');
 const validateRequest = require('../middleware/validateRequest');
@@ -36,5 +38,25 @@ router.post(
 router.post('/refresh', refreshToken);
 router.post('/logout', logoutUser);
 router.get('/me', verifyToken, getMe);
+
+router.post(
+  '/forgot-password',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email address')
+  ],
+  validateRequest,
+  forgotPassword
+);
+
+router.post(
+  '/reset-password',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email address'),
+    body('otp').notEmpty().withMessage('6-digit OTP code is required'),
+    body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters')
+  ],
+  validateRequest,
+  resetPassword
+);
 
 module.exports = router;

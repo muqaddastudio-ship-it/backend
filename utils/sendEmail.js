@@ -347,9 +347,57 @@ const sendOrderStatusUpdateEmail = async (order, newStatus, customerEmail) => {
   });
 };
 
+/**
+ * Send 6-Digit Password Reset OTP Email
+ */
+const sendOtpEmail = async (email, otp, name = 'Customer') => {
+  const htmlContent = `
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; border-radius: 12px; overflow: hidden; color: #111111;">
+      <!-- Header -->
+      <div style="background: #0a0904; padding: 25px; text-align: center;">
+        <h1 style="color: #c9a84c; font-size: 22px; margin: 0; letter-spacing: 3px; text-transform: uppercase;">MUQADDAS STUDIO</h1>
+        <p style="color: #cccccc; font-size: 10px; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase;">Password Reset Security Code</p>
+      </div>
+
+      <!-- Body -->
+      <div style="padding: 30px; text-align: center;">
+        <h2 style="font-size: 18px; color: #111111; margin-top: 0;">Password Reset Request</h2>
+        <p style="font-size: 13px; color: #555555; line-height: 1.5;">
+          Dear <strong>${name}</strong>,<br/>
+          Use the 6-digit OTP code below to verify your email and set a new password:
+        </p>
+
+        <div style="background: #faf7f2; border: 2px dashed #c9a84c; border-radius: 8px; padding: 18px; margin: 20px 0;">
+          <div style="font-size: 34px; font-weight: bold; letter-spacing: 8px; color: #0a0904; font-family: monospace;">${otp}</div>
+          <p style="font-size: 11px; color: #dc2626; margin: 8px 0 0 0; font-weight: bold;">
+            ⏱️ Expire Warning: Code valid for 2 minutes only
+          </p>
+        </div>
+
+        <p style="font-size: 12px; color: #777777;">
+          If you did not request a password reset, please ignore this email.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background: #f4f4f4; padding: 15px; text-align: center; font-size: 11px; color: #888888;">
+        Muqaddas Studio — Refined Pakistani Couture
+      </div>
+    </div>
+  `;
+
+  return await dispatchEmail({
+    to: email,
+    subject: `🔑 ${otp} is your Password Reset OTP — Muqaddas Studio`,
+    html: htmlContent,
+    fromName: 'Muqaddas Studio Security'
+  });
+};
+
 module.exports = {
   dispatchEmail,
   sendCustomerOrderEmail,
   sendAdminOrderEmail,
-  sendOrderStatusUpdateEmail
+  sendOrderStatusUpdateEmail,
+  sendOtpEmail
 };

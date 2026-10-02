@@ -17,6 +17,8 @@ const userSchema = new mongoose.Schema({
   phone: { type: String },
   role: { type: String, enum: ['customer', 'admin'], default: 'customer' },
   addresses: [addressSchema],
+  resetPasswordOtp: { type: String },
+  resetPasswordOtpExpires: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });
 
