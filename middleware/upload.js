@@ -31,20 +31,25 @@ const processUploads = async (files) => {
         process.env.CLOUDINARY_API_KEY && 
         process.env.CLOUDINARY_API_KEY !== '123456789'
       ) {
-        const stream = cloudinary.uploader.upload_stream(
-          { folder: 'muqaddas-studio' },
-          (error, result) => {
-            if (error) {
-              // Cloudinary failed — fallback to base64
-              console.error('[Upload] Cloudinary error, using base64 fallback:', error.message);
-              const b64 = Buffer.from(file.buffer).toString('base64');
-              resolve(`data:${file.mimetype};base64,${b64}`);
-            } else {
-              resolve(result.secure_url);
+        try {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'muqaddas-studio' },
+            (error, result) => {
+              if (error || !result) {
+                console.error('[Upload] Cloudinary error, using base64 fallback:', error?.message);
+                const b64 = Buffer.from(file.buffer).toString('base64');
+                resolve(`data:${file.mimetype};base64,${b64}`);
+              } else {
+                resolve(result.secure_url);
+              }
             }
-          }
-        );
-        stream.end(file.buffer);
+          );
+          stream.end(file.buffer);
+        } catch (err) {
+          console.error('[Upload] Cloudinary stream throw, using base64 fallback:', err.message);
+          const b64 = Buffer.from(file.buffer).toString('base64');
+          resolve(`data:${file.mimetype};base64,${b64}`);
+        }
       } else {
         // Fallback to Data URI for seamless local testing
         const b64 = Buffer.from(file.buffer).toString('base64');

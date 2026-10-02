@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const asyncHandler = require('../utils/asyncHandler');
@@ -121,11 +122,16 @@ const getFeaturedProducts = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get product by slug
+// @desc    Get product by slug or MongoDB ID
 // @route   GET /api/products/:slug
 // @access  Public
 const getProductBySlug = asyncHandler(async (req, res) => {
-  const product = await Product.findOne({ slug: req.params.slug });
+  const isObjectId = mongoose.Types.ObjectId.isValid(req.params.slug);
+  const query = isObjectId
+    ? { $or: [{ slug: req.params.slug }, { _id: req.params.slug }] }
+    : { slug: req.params.slug };
+
+  const product = await Product.findOne(query);
   if (!product) {
     res.status(404);
     throw new Error('Product not found');
