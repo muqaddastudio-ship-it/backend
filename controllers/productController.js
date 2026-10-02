@@ -160,6 +160,22 @@ const getProductBySlug = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get product by MongoDB ID (for admin edit form)
+// @route   GET /api/products/id/:id
+// @access  Private/Admin
+const getProductById = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  res.status(200).json({
+    success: true,
+    data: { product }
+  });
+});
+
 // @desc    Check if logged-in user can review product (verified buyer check)
 // @route   GET /api/products/:id/can-review
 // @access  Private
@@ -520,6 +536,7 @@ module.exports = {
   getProducts,
   getFeaturedProducts,
   getProductBySlug,
+  getProductById,
   canUserReviewProduct,
   addProductReview,
   createProduct,
