@@ -163,7 +163,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
         <!-- Totals -->
         <div style="margin-top: 20px; text-align: right; font-size: 14px; line-height: 1.8;">
           <p style="margin: 4px 0;">Subtotal: <strong>PKR ${(order.subtotal || 0).toLocaleString()}</strong></p>
-          <p style="margin: 4px 0;">Shipping Fee: <strong>${(order.shippingFee === 0 || order.shippingFee === '0') ? 'FREE' : `PKR ${order.shippingFee || 250}`}</strong></p>
+          <p style="margin: 4px 0;">Shipping Fee: <strong>${(order.shippingFee === 0 || order.shippingFee === '0') ? 'FREE' : `PKR ${order.shippingFee || 199}`}</strong></p>
           ${(order.onlineDiscount || 0) > 0 ? `<p style="margin: 4px 0; color: #16a34a;">Online Transfer Discount: <strong>-PKR ${order.onlineDiscount}</strong> (Rs. 200 Saved!)</p>` : ''}
           <p style="margin: 8px 0; font-size: 18px; color: #0a0904;">Total Amount: <strong>PKR ${(order.total || 0).toLocaleString()}</strong></p>
         </div>

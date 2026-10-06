@@ -101,7 +101,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
   // Step 3: Calculate totals & Online Payment Discount (Save Rs. 200)
   const subtotal = items.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const shippingFee = subtotal > 5000 ? 0 : 250; // Free shipping over PKR 5,000, else 250 PKR
+  const shippingFee = subtotal > 5000 ? 0 : 199; // Free shipping over PKR 5,000, else 199 PKR
   const isOnlinePayment = paymentMethod === 'ONLINE_TRANSFER' || paymentMethod === 'Online Transfer';
   const onlineDiscount = isOnlinePayment ? 200 : 0;
   const total = Math.max(0, subtotal + shippingFee - onlineDiscount);
