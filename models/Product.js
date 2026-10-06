@@ -4,6 +4,7 @@ const variantSchema = new mongoose.Schema({
   size: { type: String, required: true },
   color: { type: String, default: 'Default' },
   colorHex: { type: String, default: '#000000' },
+  image: { type: String, default: '' },
   stock: { type: Number, required: true, default: 0, min: 0 }
 });
 

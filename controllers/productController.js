@@ -323,12 +323,20 @@ const createProduct = asyncHandler(async (req, res) => {
     parsedVariants = variants;
   }
 
-  const cleanVariants = parsedVariants.map(v => ({
-    size: v.size || 'M',
-    color: v.color || 'Default',
-    colorHex: v.colorHex || '#000000',
-    stock: isNaN(Number(v.stock)) ? 0 : Math.max(0, Number(v.stock))
-  }));
+  const cleanVariants = parsedVariants.map(v => {
+    let variantImg = v.image || '';
+    if (variantImg.startsWith('NEW_INDEX_')) {
+      const idx = parseInt(variantImg.replace('NEW_INDEX_', ''), 10);
+      variantImg = imageUrls[idx] || imageUrls[0] || '';
+    }
+    return {
+      size: v.size || 'M',
+      color: v.color || 'Default',
+      colorHex: v.colorHex || '#000000',
+      image: variantImg,
+      stock: isNaN(Number(v.stock)) ? 0 : Math.max(0, Number(v.stock))
+    };
+  });
 
   const normCategory = (category || 'clothes').toLowerCase().trim();
   const validCategories = ['clothes', 'clothing', 'perfume', 'accessories', 'shoes', 'bags'];
@@ -435,12 +443,21 @@ const updateProduct = asyncHandler(async (req, res) => {
       parsedVariants = variants;
     }
 
-    product.variants = parsedVariants.map(v => ({
-      size: v.size || 'M',
-      color: v.color || 'Default',
-      colorHex: v.colorHex || '#000000',
-      stock: isNaN(Number(v.stock)) ? 0 : Math.max(0, Number(v.stock))
-    }));
+    const existingCount = Array.isArray(existingImages) ? (typeof existingImages === 'string' ? 1 : existingImages.length) : 0;
+    product.variants = parsedVariants.map(v => {
+      let variantImg = v.image || '';
+      if (variantImg.startsWith('NEW_INDEX_')) {
+        const idx = parseInt(variantImg.replace('NEW_INDEX_', ''), 10);
+        variantImg = imageUrls[existingCount + idx] || imageUrls[idx] || imageUrls[0] || '';
+      }
+      return {
+        size: v.size || 'M',
+        color: v.color || 'Default',
+        colorHex: v.colorHex || '#000000',
+        image: variantImg,
+        stock: isNaN(Number(v.stock)) ? 0 : Math.max(0, Number(v.stock))
+      };
+    });
   }
 
   try {
