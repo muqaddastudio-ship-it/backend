@@ -209,7 +209,7 @@ const sendCustomerOrderEmail = async (order, customerEmail) => {
 const sendAdminOrderEmail = async (order) => {
   const adminEmail = process.env.ADMIN_EMAIL || 'muqaddasstudio@gmail.com';
 
-  const itemsText = order.items.map(item => `- ${item.name} (${item.size}) x${item.qty} = PKR ${(item.price * item.qty).toLocaleString()}`).join('<br/>');
+  const itemsText = order.items.map(item => `- <strong>${item.name}</strong> (Size: <strong>${item.size || 'Standard'}</strong> | Color: <strong style="color: #b8902e;">${item.color || 'Default'}</strong>) x${item.qty} = PKR ${(item.price * item.qty).toLocaleString()}`).join('<br/>');
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #dddddd; padding: 25px; border-radius: 8px;">
