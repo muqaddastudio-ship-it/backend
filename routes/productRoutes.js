@@ -22,7 +22,7 @@ router.get('/id/:id', verifyToken, isAdmin, getProductById);  // Admin edit by I
 router.get('/:slug', getProductBySlug);
 
 // Customer Review Routes (Verified Buyer Only)
-router.get('/:id/can-review', verifyToken, canUserReviewProduct);
+router.get('/:id/can-review', optionalAuth, canUserReviewProduct);
 router.post('/:id/reviews', verifyToken, addProductReview);
 
 // Admin Routes
