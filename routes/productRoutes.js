@@ -8,8 +8,7 @@ const {
   addProductReview,
   createProduct,
   updateProduct,
-  deleteProduct,
-  seedDemoProducts
+  deleteProduct
 } = require('../controllers/productController');
 const { verifyToken, optionalAuth, isAdmin } = require('../middleware/auth');
 const { upload } = require('../middleware/upload');
@@ -18,7 +17,7 @@ const router = express.Router();
 
 router.get('/', getProducts);
 router.get('/featured', getFeaturedProducts);
-router.post('/seed-demo', verifyToken, isAdmin, seedDemoProducts);
+
 router.get('/id/:id', verifyToken, isAdmin, getProductById);  // Admin edit by ID
 router.get('/:slug', getProductBySlug);
 

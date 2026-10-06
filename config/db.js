@@ -25,14 +25,8 @@ const connectDB = async () => {
 
 const autoSeedIfEmpty = async () => {
   try {
-    const Product = require('../models/Product');
-    const User = require('../models/User');
-    const count = await Product.countDocuments();
-    if (count === 0) {
-      console.log('[MongoDB Auto-Seed] Seeding default products and admin user...');
-      const seedFunc = require('./seedHelper');
-      await seedFunc();
-    }
+    const seedFunc = require('./seedHelper');
+    await seedFunc();
   } catch (err) {
     console.error('[MongoDB Auto-Seed Error]', err.message);
   }
