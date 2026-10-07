@@ -300,11 +300,24 @@ const createProduct = asyncHandler(async (req, res) => {
   } = req.body;
 
   let imageUrls = [];
+  const sizeChartFile = req.files ? req.files.find(f => f.fieldname === 'sizeChartImage') : null;
+  const imageFiles = req.files ? req.files.filter(f => f.fieldname === 'images' || f.fieldname === 'image') : [];
 
-  if (req.files && req.files.length > 0) {
-    imageUrls = await processUploads(req.files);
+  if (imageFiles.length > 0) {
+    imageUrls = await processUploads(imageFiles);
+  } else if (req.files && req.files.length > 0) {
+    const galleryFiles = req.files.filter(f => f.fieldname !== 'sizeChartImage');
+    imageUrls = await processUploads(galleryFiles);
   } else if (bodyImages) {
     imageUrls = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
+  }
+
+  let sizeChartUrl = req.body.sizeChart || '';
+  if (sizeChartFile) {
+    const uploadedChart = await processUploads([sizeChartFile]);
+    if (uploadedChart.length > 0) {
+      sizeChartUrl = uploadedChart[0];
+    }
   }
 
   if (imageUrls.length === 0) {
@@ -359,6 +372,7 @@ const createProduct = asyncHandler(async (req, res) => {
       discountPrice: discountPrice ? Number(discountPrice) : null,
       images: imageUrls,
       variants: cleanVariants,
+      sizeChart: sizeChartUrl,
       featured: featured === 'true' || featured === true,
       status: status || 'active'
     });
@@ -402,9 +416,28 @@ const updateProduct = asyncHandler(async (req, res) => {
     imageUrls = Array.isArray(existingImages) ? existingImages : [existingImages];
   }
 
-  if (req.files && req.files.length > 0) {
-    const newUrls = await processUploads(req.files);
+  const sizeChartFile = req.files ? req.files.find(f => f.fieldname === 'sizeChartImage') : null;
+  const imageFiles = req.files ? req.files.filter(f => f.fieldname === 'images' || f.fieldname === 'image') : [];
+
+  if (imageFiles.length > 0) {
+    const newUrls = await processUploads(imageFiles);
     imageUrls = [...imageUrls, ...newUrls];
+  } else if (req.files && req.files.length > 0) {
+    const galleryFiles = req.files.filter(f => f.fieldname !== 'sizeChartImage');
+    if (galleryFiles.length > 0) {
+      const newUrls = await processUploads(galleryFiles);
+      imageUrls = [...imageUrls, ...newUrls];
+    }
+  }
+
+  if (req.body.sizeChart !== undefined) {
+    product.sizeChart = req.body.sizeChart;
+  }
+  if (sizeChartFile) {
+    const uploadedChart = await processUploads([sizeChartFile]);
+    if (uploadedChart.length > 0) {
+      product.sizeChart = uploadedChart[0];
+    }
   }
 
   if (name && name !== product.name) {

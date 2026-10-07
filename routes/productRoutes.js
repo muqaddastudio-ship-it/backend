@@ -26,8 +26,8 @@ router.get('/:id/can-review', optionalAuth, canUserReviewProduct);
 router.post('/:id/reviews', verifyToken, addProductReview);
 
 // Admin Routes
-router.post('/', verifyToken, isAdmin, upload.array('images', 5), createProduct);
-router.put('/:id', verifyToken, isAdmin, upload.array('images', 5), updateProduct);
+router.post('/', verifyToken, isAdmin, upload.any(), createProduct);
+router.put('/:id', verifyToken, isAdmin, upload.any(), updateProduct);
 router.delete('/:id', verifyToken, isAdmin, deleteProduct);
 
 module.exports = router;

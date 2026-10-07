@@ -34,6 +34,7 @@ const productSchema = new mongoose.Schema({
   images: [{ type: String, required: true }],
   variants: [variantSchema],
   reviews: [reviewSchema],
+  sizeChart: { type: String, default: '' },
   status: { 
     type: String, 
     enum: ['active', 'coming-soon', 'archived'], 
