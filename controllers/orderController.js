@@ -49,8 +49,10 @@ const createOrder = asyncHandler(async (req, res) => {
     if (!product) {
       // Rollback any previously decremented items
       for (const dec of decrementedItems) {
+        const rollbackFilter = { _id: dec.productId, 'variants.size': dec.size };
+        if (dec.color && dec.color !== 'Default') rollbackFilter['variants.color'] = dec.color;
         await Product.updateOne(
-          { _id: dec.productId, 'variants.size': dec.size },
+          rollbackFilter,
           { $inc: { 'variants.$.stock': dec.qty } }
         );
       }
@@ -58,26 +60,36 @@ const createOrder = asyncHandler(async (req, res) => {
       throw new Error(`Product ${item.name} not found`);
     }
 
-    const variant = product.variants.find(v => v.size === item.size);
+    const variant = (item.color && item.color !== 'Default')
+      ? (product.variants.find(v => v.size === item.size && (v.color || '').toLowerCase() === item.color.toLowerCase()) || product.variants.find(v => v.size === item.size))
+      : product.variants.find(v => v.size === item.size);
+
     if (!variant || variant.stock < item.qty) {
       // Rollback
       for (const dec of decrementedItems) {
+        const rollbackFilter = { _id: dec.productId, 'variants.size': dec.size };
+        if (dec.color && dec.color !== 'Default') rollbackFilter['variants.color'] = dec.color;
         await Product.updateOne(
-          { _id: dec.productId, 'variants.size': dec.size },
+          rollbackFilter,
           { $inc: { 'variants.$.stock': dec.qty } }
         );
       }
       res.status(400);
-      throw new Error(`Insufficient stock for ${product.name} (Size: ${item.size}). Only ${variant ? variant.stock : 0} left.`);
+      throw new Error(`Insufficient stock for ${product.name} (Size: ${item.size}${item.color && item.color !== 'Default' ? `, Color: ${item.color}` : ''}). Only ${variant ? variant.stock : 0} left.`);
     }
 
     // Step 2: Perform atomic decrement
+    const decrementFilter = {
+      _id: item.product,
+      'variants.size': item.size,
+      'variants.stock': { $gte: item.qty }
+    };
+    if (item.color && item.color !== 'Default') {
+      decrementFilter['variants.color'] = item.color;
+    }
+
     const updatedProduct = await Product.findOneAndUpdate(
-      {
-        _id: item.product,
-        'variants.size': item.size,
-        'variants.stock': { $gte: item.qty }
-      },
+      decrementFilter,
       {
         $inc: { 'variants.$.stock': -item.qty }
       },
@@ -87,8 +99,10 @@ const createOrder = asyncHandler(async (req, res) => {
     if (!updatedProduct) {
       // Race condition occurred, rollback
       for (const dec of decrementedItems) {
+        const rollbackFilter = { _id: dec.productId, 'variants.size': dec.size };
+        if (dec.color && dec.color !== 'Default') rollbackFilter['variants.color'] = dec.color;
         await Product.updateOne(
-          { _id: dec.productId, 'variants.size': dec.size },
+          rollbackFilter,
           { $inc: { 'variants.$.stock': dec.qty } }
         );
       }
@@ -96,7 +110,7 @@ const createOrder = asyncHandler(async (req, res) => {
       throw new Error(`Item ${item.name} (Size: ${item.size}) was just bought by another customer.`);
     }
 
-    decrementedItems.push({ productId: item.product, size: item.size, qty: item.qty });
+    decrementedItems.push({ productId: item.product, size: item.size, color: item.color, qty: item.qty });
   }
 
   // Step 3: Calculate totals & Online Payment Discount (Save Rs. 200)
